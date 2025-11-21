@@ -40,7 +40,7 @@ class Launcher {
             Method method = methods.get(url);
             Object instance = instances.get(url);
             
-            // I need to test this still
+            // I need to test this still, since part C says you are free to only handle GET requests, this was simplest way I could find. There are interesting ways with POST reqeuests. 
             String input = exchange.getRequestURI().getQuery();
 
             String result;

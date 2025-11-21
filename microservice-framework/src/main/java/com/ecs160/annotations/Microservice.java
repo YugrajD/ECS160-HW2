@@ -1,4 +1,4 @@
-package com.ecs160.persistence.annotations;
+package com.ecs160.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

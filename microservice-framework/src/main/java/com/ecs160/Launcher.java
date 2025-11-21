@@ -1,11 +1,16 @@
 package com.ecs160;
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpExchange;
-import java.util.*;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.ecs160.annotations.Endpoint;
+import com.ecs160.annotations.Microservice;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 
 
@@ -17,11 +22,13 @@ class Launcher {
     class MyHTTPHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            String response = "The server is running!!";
+
+            // This will get the URL path which is the endpoint
             String url = exchange.getRequestURI().getPath();
             if (url.startsWith("/")) {
                 url = url.substring(1);
             }
+            String response;
             if (!methods.containsKey(url)) {
                 response = "Endpoint not found";
                 exchange.sendResponseHeaders(404, response.length());
@@ -29,13 +36,16 @@ class Launcher {
                 exchange.getResponseBody().close();
                 return;
             }
+
             Method method = methods.get(url);
             Object instance = instances.get(url);
+            
+            // I need to test this still
             String input = exchange.getRequestURI().getQuery();
-            if (input == null) {
-                input = "";
-            }
+
             String result;
+
+            // Once we get the method and instance, we try to invoke the method, like in the midterm practice.
             try {
                 result = method.invoke(instance, input).toString();
             } catch (Exception e) {

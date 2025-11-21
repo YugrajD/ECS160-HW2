@@ -1,10 +1,13 @@
 package com.ecs160.persistence;
 
+import com.ecs160.persistence.annotations.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +24,7 @@ public class RedisDB {
     private Jedis jedisSession;
 
     private RedisDB() {
-        jedisSession = new Jedis("localhost", 6379);
+        this.jedisSession = new Jedis("localhost", 6379);
     }
 
 
@@ -68,15 +71,15 @@ public class RedisDB {
             }
         }
 
-        jedis.hset(jedisKey, jedisMap);
+        jedisSession.hset(jedisKey, jedisMap);
         return true;
     }
 
 
-    public Object load(Object object)  {
+    public Object load(Object object) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         Object idValue = getId(object);
         String jedisKey = object.getClass().getSimpleName() + ":" + idValue.toString();
-        Map<String, String> jedisData = jedis.hgetall(jedisKey);
+        Map<String, String> jedisData = jedisSession.hgetAll(jedisKey);
 
         if (jedisData == null || jedisData.isEmpty()) {
             throw new RuntimeException(idValue + " does not exist or contains nothing");
@@ -86,6 +89,15 @@ public class RedisDB {
             f.setAccessible(true);
 
             if (List.class.isAssignableFrom(f.getType())) {
+                String childIdString = jedisData.get(f.getName());
+
+                if (childIdString == null) {
+                    continue;
+                }
+
+                String[] childIdsList = childIdString.split(",");
+
+                Class<?> listObjectType = getObjectType(f);
                 List<Object> childObjects = (List<Object>) f.get(object);
                 
                 if (childObjects == null) {
@@ -93,13 +105,10 @@ public class RedisDB {
                     f.set(object, childObjects);
                 }
 
-                String childIds = jedisData.get(f.getName());
-                String[] childIdsList = childIds.split(",");
-
                 for (String childId : childIdsList) {
-                    // Need to get type of things in the list
-                    Object childObject = f.getType().getDeclaredConstructor().newInstance();
-                    setId(childObject, childId);
+                    Object childObject = listObjectType.getDeclaredConstructor().newInstance();
+                    Object id = childId;
+                    setId(childObject, id);
                     load(childObject);
                     childObjects.add(childObject);
                 }
@@ -122,8 +131,8 @@ public class RedisDB {
                 if (fieldVal == null) {
                     continue;
                 }
-                // Need to make fieldVal become the type of Field f
-                // fieldValue = 
+
+                Object fieldValue = convertType(fieldVal, f.getType());
                 f.set(object, fieldValue);
             }
         }
@@ -149,6 +158,7 @@ public class RedisDB {
         throw new RuntimeException("No @Id annotation was found");
     }
 
+    // Sets id for object
     private void setId(Object obj, Object idValue) throws IllegalAccessException{
         for (Field f: obj.getClass().getDeclaredFields()) {
             if (f.isAnnotationPresent(Id.class)) {
@@ -157,7 +167,45 @@ public class RedisDB {
                 return;
             }
         }
+
         throw new RuntimeException("No @Id annotation was found");
     }
 
+    // Converts type from string to desiredType
+    private Object convertType(String value, Class<?> desiredType) {
+        if (desiredType == String.class) {
+            return value;
+        }
+
+        else if (desiredType == int.class || desiredType == Integer.class) {
+            return Integer.parseInt(value);
+        }
+
+        else if (desiredType == long.class || desiredType == Long.class) {
+            return Long.parseLong(value);
+        }
+
+        else if (desiredType == boolean.class || desiredType == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+
+        else if (desiredType == double.class || desiredType == Double.class) {
+            return Double.parseDouble(value);
+        }
+
+        throw new RuntimeException("Unsupported type: " + desiredType);
+    }
+
+
+    private Class<?> getObjectType(Field f) {
+        Type genericType = f.getGenericType();
+
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType pt = (ParameterizedType) genericType;
+            Type objectType = pt.getActualTypeArguments()[0];
+            return (Class<?>) objectType;
+        }
+
+        return Object.class;
+    }
 }

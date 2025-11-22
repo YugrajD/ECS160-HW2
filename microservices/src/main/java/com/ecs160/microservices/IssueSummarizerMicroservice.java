@@ -1,18 +1,21 @@
 package com.ecs160.microservices;
 
-
-// import the Microservice annotation we created
-/*
 import com.ecs160.annotations.Microservice;
 import com.ecs160.annotations.Endpoint;
-*/
 
-// uncomment the above imports and annotation usage as needed
-//@Microservice
+@Microservice
 public class IssueSummarizerMicroservice {
-    //@Endpoint(url = "/summarize_issue")
+    private OllamaClient ollama = new OllamaClient();
+
+
+    @Endpoint(url = "summarize_issue")
+    // May need to modify system prompt
     public String summarizeIssue(String issueJson) {
-        return "";
+        String systemPrompt = "Summarize the following GitHub Issue JSON into a single valid JSON object with these exact fields: " +
+                "\"bug_type\" (string), \"line\" (integer; default to 0), " +
+                "\"description\" (string), \"filename\" (string; default to N/A).";
+        
+        System.out.println("Issue summarizer summarizing...");
+        return ollama.query(systemPrompt, issueJson);
     }
 }
-

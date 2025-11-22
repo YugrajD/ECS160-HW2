@@ -1,18 +1,22 @@
 package com.ecs160.microservices;
 
-
-// import the Microservice annotation we created
-/*
 import com.ecs160.annotations.Microservice;
 import com.ecs160.annotations.Endpoint;
-*/
 
-// uncomment the annotations when you have created them
-//@Microservice
+@Microservice
 public class BugFinderMicroservice {
-    //@Endpoint(url = "/find_bugs")
+
+    private OllamaClient ollama = new OllamaClient();
+
+    @Endpoint(url = "find_bugs")
+    // May need to modify system prompt
     public String findBugs(String code) {
-        return "";
+        String systemPrompt = "You are an expert at finding code bugs." +
+                "Analyze the following C code for bugs. " +
+                "Return the result as a valid JSON LIST of objects in the format: \"bug_type\", \"line\", \"description\", \"filename\". " +
+                "If there are no bugs, return an empty list.";
+
+        System.out.println("Bug Finder locating bugs...");
+        return ollama.query(systemPrompt, code);
     }
 }
-

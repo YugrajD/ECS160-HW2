@@ -13,8 +13,8 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 
-
-class Launcher {
+// Changed to public? (review later)
+public class Launcher {
 
     Map<String, Object> instances = new HashMap<>();
     Map<String, Method> methods = new HashMap<>();

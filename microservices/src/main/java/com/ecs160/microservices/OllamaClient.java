@@ -14,13 +14,14 @@ public class OllamaClient {
 
     public String query(String systemPrompt, String userQuery) {
         try {
-            String fullPrompt = systemPrompt + "\\n" + userQuery;
+            // Fix for quotation marks, back slashes, new lines
+            String cleanedQuery = userQuery.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+            // Fix for quotation marks, back slashes, new lines
+            String cleanedPrompt = systemPrompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+            String fullPrompt = cleanedPrompt + "\\n" + cleanedQuery;
 
             String jsonBody = String.format(
-                "{\"model\": \"%s\",
-                \"prompt\": \"%s\",
-                \"stream\": false,
-                \"format\": \"json\"}",
+                "{\"model\": \"%s\", \"prompt\": \"%s\", \"stream\": false, \"format\": \"json\"}",
                 MODEL, fullPrompt
             );
 

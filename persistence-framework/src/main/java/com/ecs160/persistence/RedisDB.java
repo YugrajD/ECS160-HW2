@@ -139,7 +139,7 @@ public class RedisDB {
     }
 
     // Returns the Id of the object
-    private Object getId(Object obj) throws IllegalAccessException{
+    private Object getId(Object obj) throws IllegalAccessException {
         for (Field f: obj.getClass().getDeclaredFields()) {
             if (f.isAnnotationPresent(Id.class)) {
                 f.setAccessible(true);
@@ -157,7 +157,7 @@ public class RedisDB {
     }
 
     // Sets id for object
-    private void setId(Object obj, Object idValue) throws IllegalAccessException{
+    private void setId(Object obj, Object idValue) throws IllegalAccessException {
         for (Field f: obj.getClass().getDeclaredFields()) {
             if (f.isAnnotationPresent(Id.class)) {
                 f.setAccessible(true);
@@ -198,9 +198,9 @@ public class RedisDB {
     private Class<?> getObjectType(Field f) {
         Type genericType = f.getGenericType();
 
-        if (genericType instanceof ParameterizedType) {
-            ParameterizedType pt = (ParameterizedType) genericType;
-            Type objectType = pt.getActualTypeArguments()[0];
+        if (genericType.getClass().isAssignableFrom(ParameterizedType.getType())) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericType;
+            Type objectType = parameterizedType.getActualTypeArguments()[0];
             return (Class<?>) objectType;
         }
 

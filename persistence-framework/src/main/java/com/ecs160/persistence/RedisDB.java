@@ -1,20 +1,18 @@
 package com.ecs160.persistence;
 
-import com.ecs160.persistence.annotations.*;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javassist.util.proxy.MethodHandler;
-import javassist.util.proxy.ProxyFactory;
+import com.ecs160.persistence.annotations.Id;
+import com.ecs160.persistence.annotations.PersistableField;
+import com.ecs160.persistence.annotations.PersistableObject;
+
 import redis.clients.jedis.Jedis;
 
 

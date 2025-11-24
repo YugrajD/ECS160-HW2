@@ -2,7 +2,7 @@
 - [X] Load the Repo + Issues from Redis
 - [X] Clone the repository 
 - [ ] Launch the microservice framework 
-- [ ] Somehow send a get request to the sever
+- [X] Somehow send a get request to the sever
 - [ ] Call Microservice A 
 - [ ] Call Microservice B
 - [ ] Call Microservice C

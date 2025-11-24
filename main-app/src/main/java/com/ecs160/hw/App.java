@@ -1,6 +1,5 @@
 package com.ecs160.hw;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -8,11 +7,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Scanner;
 
 import com.ecs160.hw.model.Repo;
+import static com.ecs160.hw.service.GitService.cloneRepo;
 import com.ecs160.persistence.RedisDB;
 
 /**
@@ -25,18 +25,6 @@ public class App
         Constructor<RedisDB> c = RedisDB.class.getDeclaredConstructor();
         c.setAccessible(true);
         return c.newInstance();
-    }
-
-    public static void cloneRepo(String url, String directoryName) {
-        ProcessBuilder repoBuilder = new ProcessBuilder("git", "clone", url, directoryName);
-        repoBuilder.inheritIO();
-
-        try {
-            Process cloningProcess = repoBuilder.start();
-            cloningProcess.waitFor();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public static String getRequestSender (String endpoint, String input) {
@@ -65,17 +53,12 @@ public class App
     }
 
     public static void main( String[] args ) throws Exception {
-        File file = new File("selected_repo.dat");
-        Scanner scanner = new Scanner(file);
-
-        String repoName = scanner.nextLine();
-
-        List<String> cppFiles = new ArrayList<>();
-        while (scanner.hasNextLine()) {
-            cppFiles.add(scanner.nextLine());
-        }
-
-        scanner.close();
+        // Reads all lines in selected_repo.dat
+        List<String> fileLines = Files.readAllLines(Path.of("selected_repo.dat"));
+        // The first line is the name of the repo
+        String repoName = fileLines.get(0);
+        // The rest are the cpp files
+        List<String> cppFiles = fileLines.subList(1, fileLines.size());
 
         RedisDB redisDB = loadRedisDB();
 
@@ -88,6 +71,17 @@ public class App
         System.out.println("Repository Issues: " + repo.issues);
 
         cloneRepo(repo.url, repo.name);
+
+        String summarizeIssue = getRequestSender("summarize_issue", repo.issues);
+        System.out.println("Summarized Issue: " + summarizeIssue);
+
+        String bugFinder = getRequestSender("find_bugs", summarizeIssue);
+        System.out.println("Bug Finder Output: " + bugFinder);
+
+        String comparator = getRequestSender("check_equivalence", bugFinder);
+        System.out.println("Comparator Output: " + comparator);
+
+
 
     }
 }

@@ -1,0 +1,5 @@
+com\ecs160\annotations\Endpoint.class
+com\ecs160\Launcher.class
+com\ecs160\ClassLoaderHelper.class
+com\ecs160\annotations\Microservice.class
+com\ecs160\Launcher$MyHTTPHandler.class

@@ -1,0 +1,5 @@
+com\ecs160\microservices\IssueComparatorMicroservice.class
+com\ecs160\microservices\IssueSummarizerMicroservice.class
+com\ecs160\App.class
+com\ecs160\microservices\BugFinderMicroservice.class
+com\ecs160\microservices\OllamaClient.class

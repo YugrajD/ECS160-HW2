@@ -11,7 +11,7 @@ public class IssueComparatorMicroservice {
     // May need to modify system prompt
     public String checkEquivalence(String issueJsonArray) {
         String systemPrompt = "I will provide a JSON array containing two lists of bugs. " +
-                "Compare both lists and return a new JSON list with show up in BOTH lists. " +
+                "Compare both lists and return a new JSON list with show up in BOTH lists. ";
 
         System.out.println("Issue Comparator comparing...");
         return ollama.query(systemPrompt, issueJsonArray);

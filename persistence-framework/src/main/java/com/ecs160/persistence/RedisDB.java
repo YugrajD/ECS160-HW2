@@ -29,7 +29,7 @@ public class RedisDB {
     public boolean persist(Object obj) throws IllegalAccessException {
         Map<String, String> jedisMap = new HashMap<>();
         Object idValue = getId(obj);
-
+        // Joins object name with its id to create key
         String jedisKey = obj.getClass().getSimpleName() + ":" + idValue.toString();
 
         for (Field f: obj.getClass().getDeclaredFields()) {
@@ -40,7 +40,7 @@ public class RedisDB {
                 if (fieldVal == null) {
                     continue;
                 }
-
+                // Stores list of child objects
                 if (List.class.isAssignableFrom(fieldVal.getClass())) {
                     List<?> childObjects = (List<?>) fieldVal;
                     List<String> childObjectIds = new ArrayList<>();
@@ -56,19 +56,19 @@ public class RedisDB {
 
                     jedisMap.put(f.getName(), String.join(",", childObjectIds));
                 }
-
+                // Stores singular child object
                 else if (fieldVal.getClass().isAnnotationPresent(PersistableObject.class)) {
                     persist(fieldVal);
                     Object childObjectId = getId(fieldVal);
                     jedisMap.put(f.getName(), childObjectId.toString());
                 }
-
+                // Stores field
                 else {
                     jedisMap.put(f.getName(), fieldVal.toString());
                 }
             }
         }
-
+        // Stores object in Redis with its name + id as key
         jedisSession.hset(jedisKey, jedisMap);
         return true;
     }
@@ -85,7 +85,7 @@ public class RedisDB {
         
         for (Field f: object.getClass().getDeclaredFields()) {
             f.setAccessible(true);
-
+            // Loads list of child objects
             if (List.class.isAssignableFrom(f.getType())) {
                 String childIdString = jedisData.get(f.getName());
 
@@ -111,7 +111,7 @@ public class RedisDB {
                     childObjects.add(childObject);
                 }
             }
-
+            // Loads singular child object
             else if (f.isAnnotationPresent(PersistableObject.class)) {
                 Object childObject = f.get(object);
 
@@ -122,7 +122,7 @@ public class RedisDB {
 
                 load(childObject);
             }
-
+            // Loads field
             else if (f.isAnnotationPresent(PersistableField.class)) {
                 String fieldVal = jedisData.get(f.getName());
 
@@ -191,7 +191,9 @@ public class RedisDB {
             return Double.parseDouble(value);
         }
 
-        throw new RuntimeException("Unsupported type: " + desiredType);
+        else {
+            throw new RuntimeException("Unsupported type: " + desiredType);
+        }
     }
 
 

@@ -2,6 +2,12 @@ package com.ecs160.hw;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -26,10 +32,35 @@ public class App
         repoBuilder.inheritIO();
 
         try {
-            Process p = repoBuilder.start();
-            p.waitFor();
+            Process cloningProcess = repoBuilder.start();
+            cloningProcess.waitFor();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public static String getRequestSender (String endpoint, String input) {
+        try {
+            String encodingUrl = URLEncoder.encode(input, "UTF-8");
+
+            String url = "http://localhost:8080/" + endpoint + "?" + encodingUrl;
+            
+            HttpClient client = HttpClient.newHttpClient();
+
+            URI uri = new URI(url);
+            
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(uri);
+
+            requestBuilder.GET();
+
+            HttpRequest request = requestBuilder.build();
+
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+
+            return response.body();
+        } catch (Exception e) {
+            return "Error sending the GET request";
+            
         }
     }
 

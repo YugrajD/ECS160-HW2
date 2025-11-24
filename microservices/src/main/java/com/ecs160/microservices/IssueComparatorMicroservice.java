@@ -1,7 +1,7 @@
 package com.ecs160.microservices;
 
-import com.ecs160.annotations.Microservice;
 import com.ecs160.annotations.Endpoint;
+import com.ecs160.annotations.Microservice;
 
 @Microservice
 public class IssueComparatorMicroservice {

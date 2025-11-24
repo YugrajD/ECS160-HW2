@@ -1,6 +1,6 @@
 - [X] Read the selected repo 
 - [X] Load the Repo + Issues from Redis
-- [ ] Clone the repository 
+- [X] Clone the repository 
 - [ ] Launch the microservice framework 
 - [ ] Somehow send a get request to the sever
 - [ ] Call Microservice A 

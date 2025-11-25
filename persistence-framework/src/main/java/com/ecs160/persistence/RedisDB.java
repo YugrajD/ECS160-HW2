@@ -36,8 +36,24 @@ public class RedisDB {
     public boolean persist(Object obj) throws IllegalAccessException {
         Map<String, String> jedisMap = new HashMap<>();
         Object idValue = getId(obj);
+        if (idValue == null) {
+            return false;
+        }
         // Joins object name with its id to create key
-        String jedisKey = obj.getClass().getSimpleName() + ":" + idValue.toString();
+        String className = obj.getClass().getSimpleName();
+        String jedisKey;
+
+        if (className.equals("Repo")) {
+            jedisKey = "reponame:" + idValue.toString();
+        }
+
+        else if (className.equals("Issue")) {
+            jedisKey = idValue.toString();
+        }
+
+        else {
+            jedisKey = className + ":" + idValue.toString();
+        }
 
         for (Field f: obj.getClass().getDeclaredFields()) {
             if (f.isAnnotationPresent(PersistableField.class)) {
@@ -83,7 +99,23 @@ public class RedisDB {
 
     public Object load(Object object) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         Object idValue = getId(object);
-        String jedisKey = object.getClass().getSimpleName() + ":" + idValue.toString();
+        if (idValue == null) {
+            return;
+        }
+        String jedisKey;
+        
+        if (className.equals("Repo")) {
+            jedisKey = "reponame:" + idValue.toString();
+        }
+
+        else if (className.equals("Issue")) {
+            jedisKey = idValue.toString();
+        }
+
+        else {
+            jedisKey = className + ":" + idValue.toString();
+        }
+
         Map<String, String> jedisData = jedisSession.hgetAll(jedisKey);
         Map<Method, String> lazyLoadFields = new HashMap<>();
 

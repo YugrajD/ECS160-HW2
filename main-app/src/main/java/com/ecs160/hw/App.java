@@ -83,7 +83,7 @@ public class App
                 issue.id = id;
                 redisDB.load(issue);
 
-                String summarizeIssue = getRequestSender("summarize_issue", issue.description);
+                String summarizeIssue = getRequestSender("summarize_issue", issue.Description);
                 summarizedIssues.add(summarizeIssue);
                 System.out.println("Summarized Issue: " + summarizeIssue);
             }

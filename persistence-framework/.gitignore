@@ -32,6 +32,7 @@ desktop.ini
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+main-app/linux/
 
 ### VS Code ###
 .vscode/

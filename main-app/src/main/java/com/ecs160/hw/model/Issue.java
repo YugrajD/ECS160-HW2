@@ -8,5 +8,5 @@ public class Issue {
     public String id;
 
     @PersistableField
-    public String description;
+    public String Description;
 }

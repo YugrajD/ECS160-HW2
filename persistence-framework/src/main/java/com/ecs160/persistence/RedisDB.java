@@ -4,6 +4,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import javassist.util.proxy.MethodHandler;
+import javassist.util.proxy.ProxyFactory;
+import javassist.util.proxy.ProxyObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +17,7 @@ import java.util.Map;
 import com.ecs160.persistence.annotations.Id;
 import com.ecs160.persistence.annotations.PersistableField;
 import com.ecs160.persistence.annotations.PersistableObject;
+import com.ecs160.persistence.annotations.LazyLoad;
 
 import redis.clients.jedis.Jedis;
 
@@ -20,6 +26,7 @@ import redis.clients.jedis.Jedis;
 public class RedisDB {
 
     private Jedis jedisSession;
+    private static RedisDB instance = null;
 
     private RedisDB() {
         this.jedisSession = new Jedis("localhost", 6379);
@@ -78,11 +85,20 @@ public class RedisDB {
         Object idValue = getId(object);
         String jedisKey = object.getClass().getSimpleName() + ":" + idValue.toString();
         Map<String, String> jedisData = jedisSession.hgetAll(jedisKey);
+        Map<Method, String> lazyLoadFields = new HashMap<>();
 
         if (jedisData == null || jedisData.isEmpty()) {
             throw new RuntimeException(idValue + " does not exist or contains nothing");
         }
-        
+        // Locates which method contains the @LazyLoad annotation
+        for (Method m: object.getClass().getDeclaredMethods()) {
+            m.setAccessible(true);
+            // Maps the method with the name of the field
+            if (m.isAnnotationPresent(LazyLoad.class)) {
+                lazyLoadFields.put(m, m.getAnnotation(LazyLoad.class).field());
+            }
+        }
+
         for (Field f: object.getClass().getDeclaredFields()) {
             f.setAccessible(true);
             // Loads list of child objects
@@ -124,15 +140,27 @@ public class RedisDB {
             }
             // Loads field
             else if (f.isAnnotationPresent(PersistableField.class)) {
-                String fieldVal = jedisData.get(f.getName());
-
-                if (fieldVal == null) {
+                // Skips loading field if it is to be lazy loaded
+                if (lazyLoadFields.containsValue(f.getName())) {
                     continue;
                 }
 
-                Object fieldValue = convertType(fieldVal, f.getType());
-                f.set(object, fieldValue);
+                else {
+                    String fieldVal = jedisData.get(f.getName());
+
+                    if (fieldVal == null) {
+                        continue;
+                    }
+
+                    Object fieldValue = convertType(fieldVal, f.getType());
+                    f.set(object, fieldValue);
+                }
             }
+        }
+
+        if (!lazyLoadFields.isEmpty()) {
+            ProxyCreator proxyCreator = new ProxyCreator();
+            object = proxyCreator.createProxy(object, this);
         }
 
         return object;
@@ -200,7 +228,7 @@ public class RedisDB {
     private Class<?> getObjectType(Field f) {
         Type genericType = f.getGenericType();
 
-        if (genericType.getClass().isAssignableFrom(ParameterizedType.getType())) {
+        if (genericType instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) genericType;
             Type objectType = parameterizedType.getActualTypeArguments()[0];
             return (Class<?>) objectType;
@@ -208,4 +236,125 @@ public class RedisDB {
 
         return Object.class;
     }
+
+
+    public Object lazyLoad(Object obj, Field fieldName) throws IllegalAccessException, IllegalArgumentException {
+        fieldName.setAccessible(true);
+        Object fieldValue = fieldName.get(obj);
+        Object idValue = getId(obj);
+        String jedisKey = obj.getClass().getSimpleName() + ":" + idValue.toString();
+        String childIdString = jedisSession.hget(jedisKey, fieldName.getName());
+        // Field is NOT loaded yet
+        if (fieldValue == null || (fieldValue instanceof List<?> list && list.isEmpty())) {
+            // Handles field being a list
+            if (List.class.isAssignableFrom(fieldName.getType())) {
+                Class<?> listObjectType = getObjectType(fieldName);
+                List<Object> childObjects = new ArrayList<>();
+
+                if (childIdString == null || childIdString.isEmpty()) {
+                    fieldName.set(obj, childObjects);
+                    return childObjects;
+                }
+
+                String[] childIdsList = childIdString.split(",");
+
+                for (String childId : childIdsList) {
+                    Object childObject = listObjectType.getDeclaredConstructor().newInstance();
+                    setId(childObject, childId);
+                    childObjects.add(childObject);
+                }
+
+                fieldName.set(obj, childObjects);
+                return childObjects;
+            }
+            // Handles field being a singular child object
+            else {
+                if (childIdString == null || childIdString.isEmpty()) {
+                    fieldName.set(obj, null);
+                    return null;
+                }
+
+                Object childObject = fieldName.getType().getDeclaredConstructor().newInstance();
+                setId(childObject, childIdString);
+                fieldName.set(obj, childObject);
+                return childObject;
+            }
+        }
+        // Field is already loaded
+        else {
+            return fieldValue;
+        }
+    }
+
+    public static RedisDB getInstance() {
+        if (instance == null) {
+            instance = new RedisDB();
+        }
+
+        return instance;
+    }
 }
+
+
+// Inspired from Proxy Logging Class Demo
+    public class ProxyCreator {
+        private HashMap<String, Class<?>> proxyClassCache = new HashMap<>();
+
+        class LazyLoadHandler implements MethodHandler {
+            private Map<Method, String> lazyLoadFields;
+            private Object target;
+            private RedisDB redisDB;
+
+            LazyLoadHandler(Map<Method,String> lazyLoadFields, Object target, RedisDB redisDB) {
+                this.lazyLoadFields = lazyLoadFields;
+                this.target = target;
+                this.redisDB = redisDB;
+            }
+
+            @Override
+            public Object invoke(Object self, Method thisMethod, Method proceed, Object[] args) throws Throwable, NoSuchFieldException {
+                // Check if the method is annotated with @LazyLoad
+                if (lazyLoadFields.containsKey(thisMethod)) {
+                    String fieldName = lazyLoadFields.get(thisMethod);
+                    Field field = target.getClass().getDeclaredField(fieldName);
+                    return redisDB.lazyLoad(target, field);
+                    // Lazy load
+                }
+
+                return proceed.invoke(self, args);
+            }
+        }
+
+        public Object createProxy (Object obj, RedisDB redisDB) throws Exception {
+        Class<?> clazz = obj.getClass();
+        String className = clazz.getName();
+        Class<?> proxyClass;
+        // avoid creating the proxy each time
+        if (proxyClassCache.containsKey(className)) {
+            proxyClass = proxyClassCache.get(className);
+        }
+
+        else {
+            ProxyFactory factory = new ProxyFactory();
+            factory.setSuperclass(clazz);
+            proxyClass = factory.createClass();
+            proxyClassCache.put(className, proxyClass);
+        }
+
+        // Locates which method contains the @LazyLoad annotation
+        Map<Method, String> lazyLoadFields = new HashMap<>();
+        for (Method m: clazz.getDeclaredMethods()) {
+            m.setAccessible(true);
+            // Maps the method with the name of the field
+            if (m.isAnnotationPresent(LazyLoad.class)) {
+                lazyLoadFields.put(m, m.getAnnotation(LazyLoad.class).field());
+            }
+        }
+
+        Object proxyInstance = proxyClass.getDeclaredConstructor().newInstance();
+
+        ((ProxyObject) proxyInstance).setHandler(new LazyLoadHandler(lazyLoadFields, obj, redisDB));
+
+        return proxyInstance;
+    }
+    }

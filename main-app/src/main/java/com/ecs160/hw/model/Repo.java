@@ -10,10 +10,10 @@ public class Repo {
     public String name;
 
     @PersistableField
-    public String url;
+    public String Url;
 
     @PersistableField
-    public String issues;
+    public String Issues;
 
 
 }

@@ -5,7 +5,7 @@ import com.ecs160.persistence.annotations.PersistableField;
 
 public class Issue {
     @Id
-    public String issueID;
+    public String id;
 
     @PersistableField
     public String description;

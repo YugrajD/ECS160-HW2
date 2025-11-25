@@ -1,12 +1,12 @@
 package com.ecs160.hw;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -14,10 +14,10 @@ import java.util.List;
 
 import com.ecs160.hw.model.Issue;
 import com.ecs160.hw.model.Repo;
-import static com.ecs160.hw.service.GitService.cloneRepo;
-import com.ecs160.persistence.RedisDB;
 import com.ecs160.hw.service.GitService;
+import static com.ecs160.hw.service.GitService.cloneRepo;
 import com.ecs160.hw.util.JsonHandler;
+import com.ecs160.persistence.RedisDB;
 
 /**
  * Hello world!
@@ -55,7 +55,7 @@ public class App
             List<String> fileLines = Files.readAllLines(configPath);
 
             String repoName = fileLines.get(0).trim();
-            List<String> cppFiles = fileLines.subList(1, fileLines.size());
+            List<String> cFiles = fileLines.subList(1, fileLines.size());
 
             RedisDB redisDB = loadRedisDB();
 
@@ -64,16 +64,23 @@ public class App
             redisDB.load(repo);
 
             System.out.println("Repository Name: " + repo.name);
-            System.out.println("Repository URL: " + repo.url);
-            System.out.println("Repository Issues: " + repo.issues);
+            System.out.println("Repository URL: " + repo.Url + '/' + repo.name);
+            System.out.println("Repository Issues: " + repo.Issues);
 
-            cloneRepo(repo.url, repo.name);
+            File repoFolder = new File(repoName);
+            if (repoFolder.exists()) {
+                System.out.println("Repository has already been cloned.");
+            } else {
+                System.out.println("Cloning repository");
+                cloneRepo(repo.Url + '/' + repo.name, repo.name);
+                System.out.println("Cloning completed.");
+            }
 
             // calling microservice A
             List<String> summarizedIssues = new ArrayList<>();
-            for (String issueID : repo.issues.split(",")) {
+            for (String id : repo.Issues.split(",")) {
                 Issue issue = new Issue();
-                issue.issueID = issueID;
+                issue.id = id;
                 redisDB.load(issue);
 
                 String summarizeIssue = getRequestSender("summarize_issue", issue.description);
@@ -83,11 +90,11 @@ public class App
 
             // calling microservice B
             List<String> bugFinder = new ArrayList<>();
-            for (String cppFile : cppFiles) {
-                String fileContent = GitService.readFile(repo.name, cppFile);
+            for (String cFile : cFiles) {
+                String fileContent = GitService.readFile(repo.name, cFile);
                 String sendContent = getRequestSender("find_bugs", fileContent);
                 bugFinder.add(sendContent);
-                System.out.println("Bug Finder Output for " + cppFile + ": " + sendContent);
+                System.out.println("Bug Finder Output for " + cFile + ": " + sendContent);
             }
 
 

@@ -9,11 +9,14 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
+import com.ecs160.hw.model.Issue;
 import com.ecs160.hw.model.Repo;
 import static com.ecs160.hw.service.GitService.cloneRepo;
 import com.ecs160.persistence.RedisDB;
+import com.ecs160.hw.service.GitService;
 
 /**
  * Hello world!
@@ -72,11 +75,27 @@ public class App
 
         cloneRepo(repo.url, repo.name);
 
-        String summarizeIssue = getRequestSender("summarize_issue", repo.issues);
-        System.out.println("Summarized Issue: " + summarizeIssue);
+        // calling microservice A
+        List<String> summarizedIssues = new ArrayList<>();
+        for (String issueID : repo.issues.split(",")) {
+            Issue issue = new Issue();
+            issue.issueID = issueID;
+            redisDB.load(issue);
 
-        String bugFinder = getRequestSender("find_bugs", summarizeIssue);
-        System.out.println("Bug Finder Output: " + bugFinder);
+            String summarizeIssue = getRequestSender("summarize_issue", issue.description);
+            summarizedIssues.add(summarizeIssue);
+            System.out.println("Summarized Issue: " + summarizeIssue);
+        }
+
+        // calling microservice B
+        List<String> bugFinder = new ArrayList<>();
+        for (String cppFile : cppFiles) {
+            String fileContent = GitService.readFile(repo.name, cppFile);
+            String sendContent = getRequestSender("find_bugs", fileContent);
+            bugFinder.add(sendContent);
+            System.out.println("Bug Finder Output for " + cppFile + ": " + sendContent);
+        }
+
 
         String comparator = getRequestSender("check_equivalence", bugFinder);
         System.out.println("Comparator Output: " + comparator);

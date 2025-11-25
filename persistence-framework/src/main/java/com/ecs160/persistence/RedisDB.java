@@ -99,9 +99,12 @@ public class RedisDB {
 
     public Object load(Object object) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         Object idValue = getId(object);
+        
         if (idValue == null) {
             return;
         }
+
+        String className = object.getClass().getSimpleName();
         String jedisKey;
         
         if (className.equals("Repo")) {

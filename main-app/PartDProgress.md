@@ -3,7 +3,7 @@
 - [X] Clone the repository 
 - [ ] Launch the microservice framework 
 - [X] Somehow send a get request to the sever
-- [ ] Call Microservice A 
+- [ ] Call Microservice A
 - [ ] Call Microservice B
 - [ ] Call Microservice C
 - [ ] Print all output 

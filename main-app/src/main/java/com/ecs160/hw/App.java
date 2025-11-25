@@ -17,6 +17,7 @@ import com.ecs160.hw.model.Repo;
 import static com.ecs160.hw.service.GitService.cloneRepo;
 import com.ecs160.persistence.RedisDB;
 import com.ecs160.hw.service.GitService;
+import com.ecs160.hw.util.JsonHandler;
 
 /**
  * Hello world!
@@ -37,70 +38,68 @@ public class App
             String url = "http://localhost:8080/" + endpoint + "?" + encodingUrl;
             
             HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
-            URI uri = new URI(url);
-            
-            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(uri);
-
-            requestBuilder.GET();
-
-            HttpRequest request = requestBuilder.build();
-
-            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             return response.body();
+
         } catch (Exception e) {
-            return "Error sending the GET request";
-            
+            e.printStackTrace();
+            return "{}";
         }
     }
 
-    public static void main( String[] args ) throws Exception {
-        // Reads all lines in selected_repo.dat
-        List<String> fileLines = Files.readAllLines(Path.of("selected_repo.dat"));
-        // The first line is the name of the repo
-        String repoName = fileLines.get(0);
-        // The rest are the cpp files
-        List<String> cppFiles = fileLines.subList(1, fileLines.size());
+    public static void main( String[] args ) {
+        try {
+            Path configPath = Path.of("selected_repo.dat");
+            List<String> fileLines = Files.readAllLines(configPath);
 
-        RedisDB redisDB = loadRedisDB();
+            String repoName = fileLines.get(0).trim();
+            List<String> cppFiles = fileLines.subList(1, fileLines.size());
 
-        Repo repo = new Repo();
-        repo.name = repoName;
-        redisDB.load(repo);
+            RedisDB redisDB = loadRedisDB();
 
-        System.out.println("Repository Name: " + repo.name);
-        System.out.println("Repository URL: " + repo.url);
-        System.out.println("Repository Issues: " + repo.issues);
+            Repo repo = new Repo();
+            repo.name = repoName;
+            redisDB.load(repo);
 
-        cloneRepo(repo.url, repo.name);
+            System.out.println("Repository Name: " + repo.name);
+            System.out.println("Repository URL: " + repo.url);
+            System.out.println("Repository Issues: " + repo.issues);
 
-        // calling microservice A
-        List<String> summarizedIssues = new ArrayList<>();
-        for (String issueID : repo.issues.split(",")) {
-            Issue issue = new Issue();
-            issue.issueID = issueID;
-            redisDB.load(issue);
+            cloneRepo(repo.url, repo.name);
 
-            String summarizeIssue = getRequestSender("summarize_issue", issue.description);
-            summarizedIssues.add(summarizeIssue);
-            System.out.println("Summarized Issue: " + summarizeIssue);
+            // calling microservice A
+            List<String> summarizedIssues = new ArrayList<>();
+            for (String issueID : repo.issues.split(",")) {
+                Issue issue = new Issue();
+                issue.issueID = issueID;
+                redisDB.load(issue);
+
+                String summarizeIssue = getRequestSender("summarize_issue", issue.description);
+                summarizedIssues.add(summarizeIssue);
+                System.out.println("Summarized Issue: " + summarizeIssue);
+            }
+
+            // calling microservice B
+            List<String> bugFinder = new ArrayList<>();
+            for (String cppFile : cppFiles) {
+                String fileContent = GitService.readFile(repo.name, cppFile);
+                String sendContent = getRequestSender("find_bugs", fileContent);
+                bugFinder.add(sendContent);
+                System.out.println("Bug Finder Output for " + cppFile + ": " + sendContent);
+            }
+
+
+            // Completed the comparator logic using JsonHandler
+            String comparatorInput = JsonHandler.createComparatorInput(summarizedIssues, bugFinder);
+            String comparator = getRequestSender("check_equivalence", comparatorInput);
+            
+            System.out.println("\nFinal Analysis Result:");
+            System.out.println(comparator);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        // calling microservice B
-        List<String> bugFinder = new ArrayList<>();
-        for (String cppFile : cppFiles) {
-            String fileContent = GitService.readFile(repo.name, cppFile);
-            String sendContent = getRequestSender("find_bugs", fileContent);
-            bugFinder.add(sendContent);
-            System.out.println("Bug Finder Output for " + cppFile + ": " + sendContent);
-        }
-
-
-        String comparator = getRequestSender("check_equivalence", bugFinder);
-        System.out.println("Comparator Output: " + comparator);
-
-
-
     }
 }

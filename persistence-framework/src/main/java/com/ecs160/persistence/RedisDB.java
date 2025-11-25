@@ -15,8 +15,6 @@ import com.ecs160.persistence.annotations.PersistableObject;
 
 import redis.clients.jedis.Jedis;
 
-
-
 public class RedisDB {
 
     private Jedis jedisSession;
@@ -25,187 +23,168 @@ public class RedisDB {
         this.jedisSession = new Jedis("localhost", 6379);
     }
 
-
     public boolean persist(Object obj) throws IllegalAccessException {
-        Map<String, String> jedisMap = new HashMap<>();
-        Object idValue = getId(obj);
-        // Joins object name with its id to create key
-        String jedisKey = obj.getClass().getSimpleName() + ":" + idValue.toString();
+        try {
+            if (obj == null) return false;
+            Class<?> clazz = obj.getClass();
+            if (!clazz.isAnnotationPresent(PersistableObject.class)) {
+                return false;
+            }
 
-        for (Field f: obj.getClass().getDeclaredFields()) {
-            if (f.isAnnotationPresent(PersistableField.class)) {
-                f.setAccessible(true);
-                Object fieldVal = f.get(obj);
+            Map<String, String> jedisMap = new HashMap<>();
+            Object idValue = getId(obj);
+            if (idValue == null) return false;
 
-                if (fieldVal == null) {
-                    continue;
-                }
-                // Stores list of child objects
-                if (List.class.isAssignableFrom(fieldVal.getClass())) {
-                    List<?> childObjects = (List<?>) fieldVal;
-                    List<String> childObjectIds = new ArrayList<>();
+            // Joins object name with its id to create key
+            String jedisKey = clazz.getSimpleName() + ":" + idValue.toString();
 
-                    for (Object childObject : childObjects) {
-                        if (childObject.getClass().isAnnotationPresent(PersistableObject.class)) {
-                            persist(childObject);
+            for (Field f : clazz.getDeclaredFields()) {
+                if (f.isAnnotationPresent(PersistableField.class)) {
+                    f.setAccessible(true);
+                    Object fieldVal = f.get(obj);
 
-                            Object childObjectId = getId(childObject);
-                            childObjectIds.add(childObjectId.toString());
-                        }
+                    if (fieldVal == null) {
+                        continue;
                     }
 
-                    jedisMap.put(f.getName(), String.join(",", childObjectIds));
-                }
-                // Stores singular child object
-                else if (fieldVal.getClass().isAnnotationPresent(PersistableObject.class)) {
-                    persist(fieldVal);
-                    Object childObjectId = getId(fieldVal);
-                    jedisMap.put(f.getName(), childObjectId.toString());
-                }
-                // Stores field
-                else {
-                    jedisMap.put(f.getName(), fieldVal.toString());
+                    // Handle Lists
+                    if (fieldVal instanceof List) {
+                        List<?> list = (List<?>) fieldVal;
+                        StringBuilder sb = new StringBuilder();
+                        for (Object item : list) {
+                            // Recursively persist if it's a PersistableObject
+                            if (item.getClass().isAnnotationPresent(PersistableObject.class)) {
+                                persist(item);
+                                Object itemId = getId(item);
+                                sb.append(itemId.toString()).append(",");
+                            } else {
+                                sb.append(item.toString()).append(",");
+                            }
+                        }
+                        if (sb.length() > 0) {
+                            sb.setLength(sb.length() - 1); // remove trailing comma
+                        }
+                        jedisMap.put(f.getName(), sb.toString());
+                    } 
+                    // Handle single persistable objects
+                    else if (fieldVal.getClass().isAnnotationPresent(PersistableObject.class)) {
+                        persist(fieldVal);
+                        Object childId = getId(fieldVal);
+                        jedisMap.put(f.getName(), childId.toString());
+                    } 
+                    // Handle primitives/strings
+                    else {
+                        jedisMap.put(f.getName(), fieldVal.toString());
+                    }
                 }
             }
+            if (!jedisMap.isEmpty()) {
+                jedisSession.hset(jedisKey, jedisMap);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        // Stores object in Redis with its name + id as key
-        jedisSession.hset(jedisKey, jedisMap);
-        return true;
     }
 
+    public void load(Object obj) {
+        try {
+            Class<?> clazz = obj.getClass();
+            Object idValue = getId(obj);
+            if (idValue == null) return;
 
-    public Object load(Object object) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
-        Object idValue = getId(object);
-        String jedisKey = object.getClass().getSimpleName() + ":" + idValue.toString();
-        Map<String, String> jedisData = jedisSession.hgetAll(jedisKey);
+            String jedisKey = clazz.getSimpleName() + ":" + idValue.toString();
+            Map<String, String> data = jedisSession.hgetAll(jedisKey);
+            
+            if (data == null || data.isEmpty()) return;
 
-        if (jedisData == null || jedisData.isEmpty()) {
-            throw new RuntimeException(idValue + " does not exist or contains nothing");
+            for (Field f : clazz.getDeclaredFields()) {
+                if (f.isAnnotationPresent(PersistableField.class) && data.containsKey(f.getName())) {
+                    f.setAccessible(true);
+                    String redisVal = data.get(f.getName());
+
+                    if (List.class.isAssignableFrom(f.getType())) {
+                        // Handle loading Lists
+                        Class<?> itemType = getObjectType(f);
+                        List<Object> list = new ArrayList<>();
+                        
+                        if (redisVal != null && !redisVal.isEmpty()) {
+                            String[] items = redisVal.split(",");
+                            for (String itemStr : items) {
+                                // Check if the item type itself is a persistable object
+                                if (itemType.isAnnotationPresent(PersistableObject.class)) {
+                                    Object childObj = itemType.getDeclaredConstructor().newInstance();
+                                    // We need to set the ID on the child to load it
+                                    setId(childObj, itemStr);
+                                    // Recursive load
+                                    load(childObj);
+                                    list.add(childObj);
+                                } else {
+                                    // Basic type list
+                                    list.add(convertType(itemStr, itemType));
+                                }
+                            }
+                        }
+                        f.set(obj, list);
+                    } else if (f.getType().isAnnotationPresent(PersistableObject.class)) {
+                         // Handle loading single child object
+                         Object childObj = f.getType().getDeclaredConstructor().newInstance();
+                         setId(childObj, redisVal);
+                         load(childObj);
+                         f.set(obj, childObj);
+                    } else {
+                        // Basic types
+                        f.set(obj, convertType(redisVal, f.getType()));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        
-        for (Field f: object.getClass().getDeclaredFields()) {
-            f.setAccessible(true);
-            // Loads list of child objects
-            if (List.class.isAssignableFrom(f.getType())) {
-                String childIdString = jedisData.get(f.getName());
-
-                if (childIdString == null) {
-                    continue;
-                }
-
-                String[] childIdsList = childIdString.split(",");
-
-                Class<?> listObjectType = getObjectType(f);
-                List<Object> childObjects = (List<Object>) f.get(object);
-                
-                if (childObjects == null) {
-                    childObjects = new ArrayList<>();
-                    f.set(object, childObjects);
-                }
-
-                for (String childId : childIdsList) {
-                    Object childObject = listObjectType.getDeclaredConstructor().newInstance();
-                    Object id = childId;
-                    setId(childObject, id);
-                    load(childObject);
-                    childObjects.add(childObject);
-                }
-            }
-            // Loads singular child object
-            else if (f.isAnnotationPresent(PersistableObject.class)) {
-                Object childObject = f.get(object);
-
-                if (childObject == null) {
-                    childObject = f.getType().getDeclaredConstructor().newInstance();
-                    f.set(object, childObject);
-                }
-
-                load(childObject);
-            }
-            // Loads field
-            else if (f.isAnnotationPresent(PersistableField.class)) {
-                String fieldVal = jedisData.get(f.getName());
-
-                if (fieldVal == null) {
-                    continue;
-                }
-
-                Object fieldValue = convertType(fieldVal, f.getType());
-                f.set(object, fieldValue);
-            }
-        }
-
-        return object;
     }
 
-    // Returns the Id of the object
+    // Helper to get ID value from object
     private Object getId(Object obj) throws IllegalAccessException {
-        for (Field f: obj.getClass().getDeclaredFields()) {
+        for (Field f : obj.getClass().getDeclaredFields()) {
             if (f.isAnnotationPresent(Id.class)) {
                 f.setAccessible(true);
-                Object idValue = f.get(obj);
-
-                if (idValue == null) {
-                    throw new RuntimeException("Id field is null");
-                }
-
-                return idValue;
+                return f.get(obj);
             }
         }
-
-        throw new RuntimeException("No @Id annotation was found");
+        return null;
     }
 
-    // Sets id for object
-    private void setId(Object obj, Object idValue) throws IllegalAccessException {
-        for (Field f: obj.getClass().getDeclaredFields()) {
+    // Helper to set ID value on object
+    private void setId(Object obj, String val) throws Exception {
+        for (Field f : obj.getClass().getDeclaredFields()) {
             if (f.isAnnotationPresent(Id.class)) {
                 f.setAccessible(true);
-                f.set(obj, idValue);
+                // Convert string val to actual ID type
+                f.set(obj, convertType(val, f.getType()));
                 return;
             }
         }
-
-        throw new RuntimeException("No @Id annotation was found");
     }
 
     // Converts type from string to desiredType
     private Object convertType(String value, Class<?> desiredType) {
-        if (desiredType == String.class) {
-            return value;
-        }
-
-        else if (desiredType == int.class || desiredType == Integer.class) {
-            return Integer.parseInt(value);
-        }
-
-        else if (desiredType == long.class || desiredType == Long.class) {
-            return Long.parseLong(value);
-        }
-
-        else if (desiredType == boolean.class || desiredType == Boolean.class) {
-            return Boolean.parseBoolean(value);
-        }
-
-        else if (desiredType == double.class || desiredType == Double.class) {
-            return Double.parseDouble(value);
-        }
-
-        else {
-            throw new RuntimeException("Unsupported type: " + desiredType);
-        }
+        if (desiredType == String.class) return value;
+        if (desiredType == int.class || desiredType == Integer.class) return Integer.parseInt(value);
+        if (desiredType == long.class || desiredType == Long.class) return Long.parseLong(value);
+        if (desiredType == boolean.class || desiredType == Boolean.class) return Boolean.parseBoolean(value);
+        if (desiredType == double.class || desiredType == Double.class) return Double.parseDouble(value);
+        return value;
     }
 
-
+    // Fix ?
     private Class<?> getObjectType(Field f) {
         Type genericType = f.getGenericType();
-
-        if (genericType.getClass().isAssignableFrom(ParameterizedType.getType())) {
-            ParameterizedType parameterizedType = (ParameterizedType) genericType;
-            Type objectType = parameterizedType.getActualTypeArguments()[0];
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType pt = (ParameterizedType) genericType;
+            Type objectType = pt.getActualTypeArguments()[0];
             return (Class<?>) objectType;
         }
-
-        return Object.class;
+        return f.getType();
     }
 }

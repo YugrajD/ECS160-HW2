@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.ecs160.AppTest" time="0.054" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.ecs160.hw.AppTest" time="0.051" tests="1" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="23"/>
     <property name="sun.cpu.isalist" value="amd64"/>
     <property name="sun.jnu.encoding" value="Cp1252"/>
-    <property name="java.class.path" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\microservices\target\test-classes;C:\Users\Manav\Desktop\Repos\ECS160-HW2\microservices\target\classes;C:\Users\Manav\.m2\repository\junit\junit\4.11\junit-4.11.jar;C:\Users\Manav\.m2\repository\org\hamcrest\hamcrest-core\1.3\hamcrest-core-1.3.jar;C:\Users\Manav\.m2\repository\org\apache\httpcomponents\httpcore\4.4.15\httpcore-4.4.15.jar;C:\Users\Manav\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar;C:\Users\Manav\.m2\repository\com\ecs160\microservice-framework\1.0-SNAPSHOT\microservice-framework-1.0-SNAPSHOT.jar;"/>
+    <property name="java.class.path" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\main-app\target\test-classes;C:\Users\Manav\Desktop\Repos\ECS160-HW2\main-app\target\classes;C:\Users\Manav\.m2\repository\junit\junit\4.11\junit-4.11.jar;C:\Users\Manav\.m2\repository\org\hamcrest\hamcrest-core\1.3\hamcrest-core-1.3.jar;C:\Users\Manav\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar;C:\Users\Manav\.m2\repository\com\ecs160\persistence-framework\1.0-SNAPSHOT\persistence-framework-1.0-SNAPSHOT.jar;C:\Users\Manav\.m2\repository\org\javassist\javassist\3.29.2-GA\javassist-3.29.2-GA.jar;C:\Users\Manav\.m2\repository\redis\clients\jedis\4.3.1\jedis-4.3.1.jar;C:\Users\Manav\.m2\repository\org\slf4j\slf4j-api\1.7.36\slf4j-api-1.7.36.jar;C:\Users\Manav\.m2\repository\org\apache\commons\commons-pool2\2.11.1\commons-pool2-2.11.1.jar;C:\Users\Manav\.m2\repository\org\json\json\20220320\json-20220320.jar;"/>
     <property name="java.vm.vendor" value="Oracle Corporation"/>
     <property name="sun.arch.data.model" value="64"/>
     <property name="user.variant" value=""/>
@@ -15,9 +15,9 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="C:\Program Files\Java\jdk-23\bin"/>
-    <property name="sun.java.command" value="C:\Users\Manav\AppData\Local\Temp\surefire1549741163148483824\surefirebooter6974487966474412101.jar C:\Users\Manav\AppData\Local\Temp\surefire1549741163148483824 2025-11-24T23-50-36_440-jvmRun1 surefire16565709193299485718tmp surefire_014021458917345700091tmp"/>
+    <property name="sun.java.command" value="C:\Users\Manav\AppData\Local\Temp\surefire15341570831840176303\surefirebooter6167853767709474810.jar C:\Users\Manav\AppData\Local\Temp\surefire15341570831840176303 2025-11-25T00-16-14_556-jvmRun1 surefire161769817531090172tmp surefire_08428538720925103400tmp"/>
     <property name="jdk.debug" value="release"/>
-    <property name="surefire.test.class.path" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\microservices\target\test-classes;C:\Users\Manav\Desktop\Repos\ECS160-HW2\microservices\target\classes;C:\Users\Manav\.m2\repository\junit\junit\4.11\junit-4.11.jar;C:\Users\Manav\.m2\repository\org\hamcrest\hamcrest-core\1.3\hamcrest-core-1.3.jar;C:\Users\Manav\.m2\repository\org\apache\httpcomponents\httpcore\4.4.15\httpcore-4.4.15.jar;C:\Users\Manav\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar;C:\Users\Manav\.m2\repository\com\ecs160\microservice-framework\1.0-SNAPSHOT\microservice-framework-1.0-SNAPSHOT.jar;"/>
+    <property name="surefire.test.class.path" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\main-app\target\test-classes;C:\Users\Manav\Desktop\Repos\ECS160-HW2\main-app\target\classes;C:\Users\Manav\.m2\repository\junit\junit\4.11\junit-4.11.jar;C:\Users\Manav\.m2\repository\org\hamcrest\hamcrest-core\1.3\hamcrest-core-1.3.jar;C:\Users\Manav\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar;C:\Users\Manav\.m2\repository\com\ecs160\persistence-framework\1.0-SNAPSHOT\persistence-framework-1.0-SNAPSHOT.jar;C:\Users\Manav\.m2\repository\org\javassist\javassist\3.29.2-GA\javassist-3.29.2-GA.jar;C:\Users\Manav\.m2\repository\redis\clients\jedis\4.3.1\jedis-4.3.1.jar;C:\Users\Manav\.m2\repository\org\slf4j\slf4j-api\1.7.36\slf4j-api-1.7.36.jar;C:\Users\Manav\.m2\repository\org\apache\commons\commons-pool2\2.11.1\commons-pool2-2.11.1.jar;C:\Users\Manav\.m2\repository\org\json\json\20220320\json-20220320.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="user.home" value="C:\Users\Manav"/>
     <property name="user.language" value="en"/>
@@ -25,12 +25,12 @@
     <property name="java.version.date" value="2024-09-17"/>
     <property name="java.home" value="C:\Program Files\Java\jdk-23"/>
     <property name="file.separator" value="\"/>
-    <property name="basedir" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\microservices"/>
+    <property name="basedir" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\main-app"/>
     <property name="java.vm.compressedOopsMode" value="Zero based"/>
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="surefire.real.class.path" value="C:\Users\Manav\AppData\Local\Temp\surefire1549741163148483824\surefirebooter6974487966474412101.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\Manav\AppData\Local\Temp\surefire15341570831840176303\surefirebooter6167853767709474810.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="23+37-2369"/>
@@ -45,7 +45,7 @@
     <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
     <property name="java.io.tmpdir" value="C:\Users\Manav\AppData\Local\Temp\"/>
     <property name="java.version" value="23"/>
-    <property name="user.dir" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\microservices"/>
+    <property name="user.dir" value="C:\Users\Manav\Desktop\Repos\ECS160-HW2\main-app"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
     <property name="sun.os.patch.level" value=""/>
@@ -58,5 +58,5 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="67.0"/>
   </properties>
-  <testcase name="shouldAnswerWithTrue" classname="com.ecs160.AppTest" time="0.005"/>
+  <testcase name="shouldAnswerWithTrue" classname="com.ecs160.hw.AppTest" time="0.005"/>
 </testsuite>

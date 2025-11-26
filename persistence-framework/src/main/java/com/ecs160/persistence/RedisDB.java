@@ -33,10 +33,25 @@ public class RedisDB {
 
             Map<String, String> jedisMap = new HashMap<>();
             Object idValue = getId(obj);
-            if (idValue == null) return false;
 
+            if (idValue == null) {
+                return false;
+            }
             // Joins object name with its id to create key
-            String jedisKey = clazz.getSimpleName() + ":" + idValue.toString();
+            String className = obj.getClass().getSimpleName();
+            String jedisKey;
+
+            if (className.equals("Repo")) {
+                jedisKey = "reponame:" + idValue.toString();
+            }
+
+            else if (className.equals("Issue")) {
+                jedisKey = idValue.toString();
+            }
+
+            else {
+                jedisKey = className + ":" + idValue.toString();
+            }
 
             for (Field f : clazz.getDeclaredFields()) {
                 if (f.isAnnotationPresent(PersistableField.class)) {
@@ -92,9 +107,26 @@ public class RedisDB {
         try {
             Class<?> clazz = obj.getClass();
             Object idValue = getId(obj);
-            if (idValue == null) return;
 
-            String jedisKey = clazz.getSimpleName() + ":" + idValue.toString();
+            if (idValue == null) {
+                return false;
+            }
+            // Joins object name with its id to create key
+            String className = obj.getClass().getSimpleName();
+            String jedisKey;
+
+            if (className.equals("Repo")) {
+                jedisKey = "reponame:" + idValue.toString();
+            }
+
+            else if (className.equals("Issue")) {
+                jedisKey = idValue.toString();
+            }
+
+            else {
+                jedisKey = className + ":" + idValue.toString();
+            }
+            
             Map<String, String> data = jedisSession.hgetAll(jedisKey);
             
             if (data == null || data.isEmpty()) return;

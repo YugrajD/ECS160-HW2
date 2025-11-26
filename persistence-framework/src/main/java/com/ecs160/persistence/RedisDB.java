@@ -44,11 +44,17 @@ public class RedisDB {
         String jedisKey;
 
         if (className.equals("Repo")) {
-            jedisKey = "reponame:" + idValue.toString();
-        }
+                jedisKey = "reponame:" + idValue.toString();
+            }
 
         else if (className.equals("Issue")) {
-            jedisKey = idValue.toString();
+            if (idValue.toString().startsWith("iss-")) {
+                jedisKey = idValue.toString();
+            }
+            
+            else {
+                jedisKey = "iss-" + idValue.toString();
+            }
         }
 
         else {
@@ -108,11 +114,17 @@ public class RedisDB {
         String jedisKey;
         
         if (className.equals("Repo")) {
-            jedisKey = "reponame:" + idValue.toString();
-        }
+                jedisKey = "reponame:" + idValue.toString();
+            }
 
         else if (className.equals("Issue")) {
-            jedisKey = idValue.toString();
+            if (idValue.toString().startsWith("iss-")) {
+                jedisKey = idValue.toString();
+            }
+            
+            else {
+                jedisKey = "iss-" + idValue.toString();
+            }
         }
 
         else {

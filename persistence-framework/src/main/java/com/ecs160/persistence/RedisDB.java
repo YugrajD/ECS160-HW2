@@ -109,7 +109,7 @@ public class RedisDB {
             Object idValue = getId(obj);
 
             if (idValue == null) {
-                return null;
+                return;
             }
             // Joins object name with its id to create key
             String className = obj.getClass().getSimpleName();

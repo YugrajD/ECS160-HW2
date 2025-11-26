@@ -44,11 +44,11 @@ public class RedisDB {
         String jedisKey;
 
         if (className.equals("Repo")) {
-            jedisKey = "Repo:" + idValue.toString();
+            jedisKey = "reponame:" + idValue.toString();
         }
 
         else if (className.equals("Issue")) {
-            jedisKey = "Issue:" + idValue.toString();
+            jedisKey = idValue.toString();
         }
 
         else {
@@ -99,7 +99,7 @@ public class RedisDB {
 
     public Object load(Object object) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         Object idValue = getId(object);
-
+        
         if (idValue == null) {
             return;
         }
@@ -108,11 +108,11 @@ public class RedisDB {
         String jedisKey;
         
         if (className.equals("Repo")) {
-            jedisKey = "Repo:" + idValue.toString();
+            jedisKey = "reponame:" + idValue.toString();
         }
 
         else if (className.equals("Issue")) {
-            jedisKey = "Issue:" + idValue.toString();
+            jedisKey = idValue.toString();
         }
 
         else {

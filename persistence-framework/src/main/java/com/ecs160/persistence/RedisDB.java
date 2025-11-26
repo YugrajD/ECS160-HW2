@@ -46,7 +46,13 @@ public class RedisDB {
             }
 
             else if (className.equals("Issue")) {
-                jedisKey = idValue.toString();
+                if (idValue.toString().startsWith("iss-")) {
+                    jedisKey = idValue.toString();
+                }
+                
+                else {
+                    jedisKey = "iss-" + idValue.toString();
+                }
             }
 
             else {
@@ -120,7 +126,13 @@ public class RedisDB {
             }
 
             else if (className.equals("Issue")) {
-                jedisKey = idValue.toString();
+                if (idValue.toString().startsWith("iss-")) {
+                    jedisKey = idValue.toString();
+                }
+                
+                else {
+                    jedisKey = "iss-" + idValue.toString();
+                }
             }
 
             else {

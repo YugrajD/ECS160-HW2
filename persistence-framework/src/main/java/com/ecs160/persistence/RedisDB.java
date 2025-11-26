@@ -109,7 +109,7 @@ public class RedisDB {
             Object idValue = getId(obj);
 
             if (idValue == null) {
-                return false;
+                return null;
             }
             // Joins object name with its id to create key
             String className = obj.getClass().getSimpleName();
@@ -126,7 +126,7 @@ public class RedisDB {
             else {
                 jedisKey = className + ":" + idValue.toString();
             }
-            
+
             Map<String, String> data = jedisSession.hgetAll(jedisKey);
             
             if (data == null || data.isEmpty()) return;

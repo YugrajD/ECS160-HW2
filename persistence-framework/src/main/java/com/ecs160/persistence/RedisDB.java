@@ -116,7 +116,7 @@ public class RedisDB {
         }
     }
 
-    public Object load(Object obj) {
+    public Object load(Object obj) throws Exception {
         try {
             Class<?> clazz = obj.getClass();
             Object idValue = getId(obj);
@@ -218,7 +218,7 @@ public class RedisDB {
     }
 
     // --- Lazy Load Implementation ---
-    public Object lazyLoad(Object obj, Field fieldName) throws IllegalAccessException, IllegalArgumentException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+    public Object lazyLoad(Object obj, Field fieldName) throws Exception {
         fieldName.setAccessible(true);
         Object fieldValue = fieldName.get(obj);
         Object idValue = getId(obj);

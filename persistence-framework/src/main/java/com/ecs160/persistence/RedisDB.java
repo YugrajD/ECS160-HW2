@@ -35,20 +35,28 @@ public class RedisDB {
         if (instance == null) {
             instance = new RedisDB();
         }
+
         return instance;
     }
 
     public boolean persist(Object obj) throws IllegalAccessException {
         try {
-            if (obj == null) return false;
+            if (obj == null) {
+                return false;
+            }
+
             Class<?> clazz = obj.getClass();
+
             if (!clazz.isAnnotationPresent(PersistableObject.class)) {
                 return false;
             }
 
             Map<String, String> jedisMap = new HashMap<>();
             Object idValue = getId(obj);
-            if (idValue == null) return false;
+
+            if (idValue == null) {
+                return false;
+            }
 
             // Joins object name with its id to create key
             String className = clazz.getSimpleName();
@@ -56,13 +64,19 @@ public class RedisDB {
 
             if (className.equals("Repo")) {
                 jedisKey = "reponame:" + idValue.toString();
-            } else if (className.equals("Issue")) {
+            } 
+            
+            else if (className.equals("Issue")) {
                 if (idValue.toString().startsWith("iss-")) {
                     jedisKey = idValue.toString();
-                } else {
+                } 
+                
+                else {
                     jedisKey = "iss-" + idValue.toString();
                 }
-            } else {
+            } 
+            
+            else {
                 jedisKey = className + ":" + idValue.toString();
             }
 
@@ -85,13 +99,18 @@ public class RedisDB {
                                 persist(item);
                                 Object itemId = getId(item);
                                 sb.append(itemId.toString()).append(",");
-                            } else {
+                            } 
+                            
+                            else {
                                 sb.append(item.toString()).append(",");
                             }
                         }
+
                         if (sb.length() > 0) {
-                            sb.setLength(sb.length() - 1); // remove trailing comma
+                            // Removes trailing comma
+                            sb.setLength(sb.length() - 1);
                         }
+                        // Stores list as comma-separated values
                         jedisMap.put(f.getName(), sb.toString());
                     } 
                     // Handle single persistable objects
@@ -106,9 +125,11 @@ public class RedisDB {
                     }
                 }
             }
+            // Stores the object in Redis if it has fields to store
             if (!jedisMap.isEmpty()) {
                 jedisSession.hset(jedisKey, jedisMap);
             }
+
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,17 +152,23 @@ public class RedisDB {
 
             if (className.equals("Repo")) {
                 jedisKey = "reponame:" + idValue.toString();
-            } else if (className.equals("Issue")) {
+            } 
+            
+            else if (className.equals("Issue")) {
                 if (idValue.toString().startsWith("iss-")) {
                     jedisKey = idValue.toString();
-                } else {
+                } 
+                
+                else {
                     jedisKey = "iss-" + idValue.toString();
                 }
-            } else {
+            } 
+            
+            else {
                 jedisKey = className + ":" + idValue.toString();
             }
 
-            Map<String, String> data = jedisSession.hgetAll(jedisKey);
+            Map<String, String> jedisData = jedisSession.hgetAll(jedisKey);
             
             // Locates which method contains the @LazyLoad annotation
             Map<Method, String> lazyLoadFields = new HashMap<>();
@@ -153,7 +180,9 @@ public class RedisDB {
                 }
             }
 
-            if (data == null || data.isEmpty()) return obj;
+            if (jedisData == null || jedisData.isEmpty()) {
+                return obj;
+            }
 
             for (Field f : clazz.getDeclaredFields()) {
                 if (f.isAnnotationPresent(PersistableField.class)) {
@@ -164,46 +193,54 @@ public class RedisDB {
                         continue; 
                     }
 
-                    if (data.containsKey(f.getName())) {
-                        String redisVal = data.get(f.getName());
+                    if (jedisData.containsKey(f.getName())) {
+                        String jedisVal = jedisData.get(f.getName());
 
                         if (List.class.isAssignableFrom(f.getType())) {
                             // Handle loading Lists
                             Class<?> itemType = getObjectType(f);
-                            List<Object> list = new ArrayList<>();
+                            List<Object> childObjects = new ArrayList<>();
                             
-                            if (redisVal != null && !redisVal.isEmpty()) {
-                                String[] items = redisVal.split(",");
+                            if (jedisVal != null && !jedisVal.isEmpty()) {
+                                String[] items = jedisVal.split(",");
+
                                 for (String itemStr : items) {
                                     // Check if the item type itself is a persistable object
                                     if (itemType.isAnnotationPresent(PersistableObject.class)) {
                                         Object childObj = itemType.getDeclaredConstructor().newInstance();
                                         // We need to set the ID on the child to load it
                                         setId(childObj, itemStr);
-                                        // Recursive load
+                                        // Recursively loads the child object
                                         load(childObj);
-                                        list.add(childObj);
-                                    } else {
+                                        childObjects.add(childObj);
+                                    } 
+                                    
+                                    else {
                                         // Basic type list
-                                        list.add(convertType(itemStr, itemType));
+                                        childObjects.add(convertType(itemStr, itemType));
                                     }
                                 }
                             }
-                            f.set(obj, list);
-                        } else if (f.getType().isAnnotationPresent(PersistableObject.class)) {
+
+                            f.set(obj, childObjects);
+                        } 
+                        
+                        else if (f.getType().isAnnotationPresent(PersistableObject.class)) {
                              // Handle loading single child object
                              Object childObj = f.getType().getDeclaredConstructor().newInstance();
-                             setId(childObj, redisVal);
+                             setId(childObj, jedisVal);
                              load(childObj);
                              f.set(obj, childObj);
-                        } else {
+                        } 
+                        
+                        else {
                             // Basic types
-                            f.set(obj, convertType(redisVal, f.getType()));
+                            f.set(obj, convertType(jedisVal, f.getType()));
                         }
                     }
                 }
             }
-
+            // Creates a proxy object if there is a lazy load field
             if (!lazyLoadFields.isEmpty()) {
                 ProxyCreator proxyCreator = new ProxyCreator();
                 obj = proxyCreator.createProxy(obj, this);
@@ -213,11 +250,12 @@ public class RedisDB {
 
         } catch (Exception e) {
             e.printStackTrace();
+
             return obj;
         }
     }
 
-    // --- Lazy Load Implementation ---
+    // Lazy loads a field
     public Object lazyLoad(Object obj, Field fieldName) throws Exception {
         fieldName.setAccessible(true);
         Object fieldValue = fieldName.get(obj);
@@ -226,9 +264,18 @@ public class RedisDB {
         // Reconstruct Key
         String className = obj.getClass().getSuperclass().getSimpleName(); // Use superclass because obj is a Proxy now
         String jedisKey;
-        if (className.equals("Repo")) jedisKey = "reponame:" + idValue.toString();
-        else if (className.equals("Issue")) jedisKey = (idValue.toString().startsWith("iss-") ? "" : "iss-") + idValue.toString();
-        else jedisKey = className + ":" + idValue.toString();
+
+        if (className.equals("Repo")) {
+            jedisKey = "reponame:" + idValue.toString();
+        } 
+        
+        else if (className.equals("Issue")) {
+            jedisKey = (idValue.toString().startsWith("iss-") ? "" : "iss-") + idValue.toString();
+        } 
+        
+        else {
+            jedisKey = className + ":" + idValue.toString();
+        }
 
         String childIdString = jedisSession.hget(jedisKey, fieldName.getName());
 
@@ -241,30 +288,53 @@ public class RedisDB {
 
                 if (childIdString == null || childIdString.isEmpty()) {
                     fieldName.set(obj, childObjects);
+
                     return childObjects;
                 }
 
                 String[] childIdsList = childIdString.split(",");
+
                 for (String childId : childIdsList) {
-                    Object childObject = listObjectType.getDeclaredConstructor().newInstance();
-                    setId(childObject, childId);
-                    load(childObject); // Recursively load the child
-                    childObjects.add(childObject);
+                    // Check if the item type itself is a persistable object
+                    if (listObjectType.isAnnotationPresent(PersistableObject.class)) {
+                        Object childObject = listObjectType.getDeclaredConstructor().newInstance();
+                        // We need to set the ID on the child to load it
+                        setId(childObject, childId);
+                        // Recursively loads the child object
+                        load(childObject);
+                        childObjects.add(childObject);
+                    } 
+                    
+                    else {
+                        // Basic types
+                        childObjects.add(convertType(childId, listObjectType));
+                    }
                 }
+
                 fieldName.set(obj, childObjects);
+
                 return childObjects;
             } 
             // Handles field being a singular child object
-            else {
+            else if (fieldName.getType().isAnnotationPresent(PersistableObject.class)) {
                 if (childIdString == null || childIdString.isEmpty()) {
                     fieldName.set(obj, null);
+
                     return null;
                 }
+
                 Object childObject = fieldName.getType().getDeclaredConstructor().newInstance();
                 setId(childObject, childIdString);
                 load(childObject);
                 fieldName.set(obj, childObject);
+
                 return childObject;
+            }
+            // Handles field being a basic type
+            else {
+                Object basicValue = convertType(childIdString, fieldName.getType());
+                fieldName.set(obj, basicValue);
+                return basicValue;
             }
         } 
         // Field is already loaded
@@ -273,8 +343,6 @@ public class RedisDB {
         }
     }
 
-    // --- Helpers ---
-
     // Helper to get ID value from object
     private Object getId(Object obj) throws IllegalAccessException {
         Class<?> clazz = obj.getClass();
@@ -282,12 +350,15 @@ public class RedisDB {
         if (obj instanceof ProxyObject) {
             clazz = clazz.getSuperclass();
         }
+
         for (Field f : clazz.getDeclaredFields()) {
             if (f.isAnnotationPresent(Id.class)) {
                 f.setAccessible(true);
+
                 return f.get(obj);
             }
         }
+
         return null;
     }
 
@@ -298,32 +369,50 @@ public class RedisDB {
                 f.setAccessible(true);
                 // Convert string val to actual ID type
                 f.set(obj, convertType(val, f.getType()));
+
                 return;
             }
         }
     }
 
-    // Converts type from string to desiredType
+    // Helper to convert type from string to desiredType
     private Object convertType(String value, Class<?> desiredType) {
-        if (desiredType == String.class) return value;
-        if (desiredType == int.class || desiredType == Integer.class) return Integer.parseInt(value);
-        if (desiredType == long.class || desiredType == Long.class) return Long.parseLong(value);
-        if (desiredType == boolean.class || desiredType == Boolean.class) return Boolean.parseBoolean(value);
-        if (desiredType == double.class || desiredType == Double.class) return Double.parseDouble(value);
+        if (desiredType == String.class) {
+            return value;
+        }
+        
+        if (desiredType == int.class || desiredType == Integer.class) {
+            return Integer.parseInt(value);
+        }
+
+        if (desiredType == long.class || desiredType == Long.class) {
+            return Long.parseLong(value);
+        }
+
+        if (desiredType == boolean.class || desiredType == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+
+        if (desiredType == double.class || desiredType == Double.class) {
+            return Double.parseDouble(value);
+        }
+
         return value;
     }
 
+    // Helper to get the object type of a list field
     private Class<?> getObjectType(Field f) {
         Type genericType = f.getGenericType();
+
         if (genericType instanceof ParameterizedType) {
             ParameterizedType pt = (ParameterizedType) genericType;
             Type objectType = pt.getActualTypeArguments()[0];
             return (Class<?>) objectType;
         }
+
         return f.getType();
     }
 
-    // --- Proxy Creator Class (Inner Class) ---
     // Inspired from Proxy Logging Class Demo
     public static class ProxyCreator {
         private HashMap<String, Class<?>> proxyClassCache = new HashMap<>();
@@ -338,25 +427,30 @@ public class RedisDB {
                 this.target = target;
                 this.redisDB = redisDB;
             }
-
+            // Loads the lazy load field when its getter is called
             @Override
             public Object invoke(Object self, Method thisMethod, Method proceed, Object[] args) throws Throwable {
                 // Check if method is intercepted for lazy loading
                 // We need to match method names/signatures since the Proxy method object might differ from the Target method object
                 for (Map.Entry<Method, String> entry : lazyLoadFields.entrySet()) {
                     Method lazyMethod = entry.getKey();
+
                     if (lazyMethod.getName().equals(thisMethod.getName()) && 
                         java.util.Arrays.equals(lazyMethod.getParameterTypes(), thisMethod.getParameterTypes())) {
                         
                         String fieldNameStr = entry.getValue();
                         Field field = target.getClass().getDeclaredField(fieldNameStr);
-                        return redisDB.lazyLoad(target, field);
+                        field.setAccessible(true);
+
+                        return redisDB.lazyLoad(self, field);
                     }
                 }
-                return proceed.invoke(self, args);
+
+                return proceed.invoke(target, args);
             }
         }
 
+        // Creates a proxy object of the given object
         public Object createProxy(Object obj, RedisDB redisDB) throws Exception {
             Class<?> clazz = obj.getClass();
             String className = clazz.getName();
@@ -374,6 +468,7 @@ public class RedisDB {
 
             // Locates which method contains the @LazyLoad annotation
             Map<Method, String> lazyLoadFields = new HashMap<>();
+            
             for (Method m : clazz.getDeclaredMethods()) {
                 m.setAccessible(true);
                 // Maps the method with the name of the field
@@ -385,14 +480,13 @@ public class RedisDB {
             Object proxyInstance = proxyClass.getDeclaredConstructor().newInstance();
             ((ProxyObject) proxyInstance).setHandler(new LazyLoadHandler(lazyLoadFields, obj, redisDB));
             
-            // Copy ID from original to proxy so keys work later
+            // Copy fields from original to proxy
             Field[] fields = clazz.getDeclaredFields();
-            for(Field field : fields) {
-                if(field.isAnnotationPresent(Id.class)) {
-                    field.setAccessible(true);
-                    Object val = field.get(obj);
-                    field.set(proxyInstance, val);
-                }
+
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object val = field.get(obj);
+                field.set(proxyInstance, val);
             }
 
             return proxyInstance;

@@ -1,14 +1,13 @@
 package com.ecs160;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
+
+import com.ecs160.persistence.RedisDB;
 import com.ecs160.persistence.annotations.Id;
 import com.ecs160.persistence.annotations.PersistableField;
 import com.ecs160.persistence.annotations.PersistableObject;
-
-
-import com.ecs160.persistence.RedisDB;
 
 /**
  * Unit test for simple App.

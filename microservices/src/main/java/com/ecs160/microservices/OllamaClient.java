@@ -1,7 +1,5 @@
 package com.ecs160.microservices;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -9,9 +7,12 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 public class OllamaClient {
     private static final String OLLAMA_URL = "http://localhost:11434/api/generate";
-    private static final String MODEL = "deepcoder:latest"; 
+    private static final String MODEL = "deepcoder:1.5b"; 
 
     public String query(String systemPrompt, String userQuery) {
         try {

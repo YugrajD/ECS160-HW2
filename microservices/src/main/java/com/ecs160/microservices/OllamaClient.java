@@ -11,7 +11,7 @@ import java.time.Duration;
 
 public class OllamaClient {
     private static final String OLLAMA_URL = "http://localhost:11434/api/generate";
-    private static final String MODEL = "deepcoder:1.5b"; 
+    private static final String MODEL = "deepcoder:latest"; 
 
     public String query(String systemPrompt, String userQuery) {
         try {

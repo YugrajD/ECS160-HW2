@@ -94,7 +94,12 @@ public class App
                 String fileContent = GitService.readFile(repo.name, cFile);
                 String sendContent = getRequestSender("find_bugs", fileContent);
                 bugFinder.add(sendContent);
-                System.out.println("Bug Finder Output for " + cFile + ": " + sendContent);
+                // Check for empty JSON to print when no bugs found
+                if (sendContent.equals("{}") || sendContent.equals("[]")) {
+                    System.out.println("Bug Finder Output for " + cFile + ": No bugs found");
+                } else {
+                    System.out.println("Bug Finder Output for " + cFile + ": " + sendContent);
+                }
             }
 
 

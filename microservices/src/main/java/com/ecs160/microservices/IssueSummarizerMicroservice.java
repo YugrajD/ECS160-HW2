@@ -11,9 +11,10 @@ public class IssueSummarizerMicroservice {
     @Endpoint(url = "summarize_issue")
     // May need to modify system prompt
     public String summarizeIssue(String issueJson) {
-        String systemPrompt = "Summarize the following GitHub Issue JSON into a single valid JSON object with these exact fields: " +
-                "\"bug_type\" (string), \"line\" (integer; default to 0), " +
-                "\"description\" (string), \"filename\" (string; default to N/A).";
+        String systemPrompt = "You are a senior software engineer." +
+        "Summarize the following GitHub Issue JSON into a single valid JSON object with these exact fields: " +
+        "\"bug_type\" (string), \"line\" (integer; default to 0), " +
+        "\"description\" (string), \"filename\" (string; default to N/A).";
         
         System.out.println("Issue summarizer summarizing...");
         return ollama.query(systemPrompt, issueJson);

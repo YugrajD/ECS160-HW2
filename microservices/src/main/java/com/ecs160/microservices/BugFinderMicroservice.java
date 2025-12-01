@@ -11,8 +11,8 @@ public class BugFinderMicroservice {
     @Endpoint(url = "find_bugs")
     // May need to modify system prompt
     public String findBugs(String code) {
-        String systemPrompt = "You are an expert at finding code bugs." +
-                "Analyze the following C code for bugs. " +
+        String systemPrompt = "You are a senior software engineer." +
+                "Analyze the following C++ code for bugs. " +
                 "Return the result as a valid JSON LIST of objects in the format: \"bug_type\", \"line\", \"description\", \"filename\". " +
                 "If there are no bugs, return an empty list.";
 

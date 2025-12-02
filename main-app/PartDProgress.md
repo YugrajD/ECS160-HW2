@@ -1,10 +1,10 @@
 - [X] Read the selected repo 
 - [X] Load the Repo + Issues from Redis
 - [X] Clone the repository 
-- [ ] Launch the microservice framework 
+- [X] Launch the microservice framework 
 - [X] Somehow send a get request to the sever
-- [ ] Call Microservice A
-- [ ] Call Microservice B
-- [ ] Call Microservice C
-- [ ] Print all output 
-- [ ] Write `ANALYSIS.md` explaining results
+- [X] Call Microservice A
+- [X] Call Microservice B
+- [X] Call Microservice C
+- [X] Print all output 
+- [X] Write `ANALYSIS.md` explaining results
